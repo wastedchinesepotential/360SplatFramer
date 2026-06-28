@@ -1,0 +1,20 @@
+{
+  "name": "360splatter",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Free browser-based 360° video to Gaussian Splatting frame extractor",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}

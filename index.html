@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>360SplatFramer — Free 360° Frame Extractor for Gaussian Splatting</title>
+  <meta name="description" content="Convert 360° video to perspective tiles for Gaussian Splatting. Free, browser-based, no accounts. Works with Insta360, Postshot, Luma AI, and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-brand">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="14" stroke="url(#grad)" stroke-width="2.5" />
+            <ellipse cx="16" cy="16" rx="8" ry="14" stroke="url(#grad)" stroke-width="1.5" />
+            <line x1="2" y1="16" x2="30" y2="16" stroke="url(#grad)" stroke-width="1.5" />
+            <defs>
+              <linearGradient id="grad" x1="0" y1="0" x2="32" y2="32">
+                <stop offset="0%" stop-color="#FF9500" />
+                <stop offset="100%" stop-color="#FFCC00" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="logo-text">360<span class="logo-accent">SplatFramer</span></h1>
+      </div>
+      <p class="header-tagline">Free browser-based 360° → Gaussian Splat frame prep</p>
+    </header>
+
+    <!-- Step 1: Upload -->
+    <section id="step-upload" class="step active">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <h2>Drop Your 360° Video</h2>
+      </div>
+      <div id="drop-zone" class="drop-zone">
+        <div class="drop-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        </div>
+        <h3>Drag & Drop your 360 Video</h3>
+        <p>Supported: Pre-stitched Equirectangular .mp4 / .mov</p>
+        <p class="drop-limit"><strong>Max Size: 500MB</strong> (Recommend trimming to 15-60 seconds for training)</p>
+        <input type="file" id="file-input" accept=".mp4,.mov" hidden>
+      </div>
+
+      <!-- Helper Instructions -->
+      <div id="export-instructions" class="alert alert-info">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="alert-icon"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        <div>
+          <strong>How to prepare your footage:</strong>
+          <ol style="margin-top: 8px; margin-bottom: 0; padding-left: 20px; font-size: 0.85rem; color: var(--text-secondary);">
+            <li>Open your `.insv` file in <a href="https://www.insta360.com/download/insta360-studio" target="_blank" style="color: var(--accent-primary);">Insta360 Studio</a>.</li>
+            <li>Trim to exactly the 15-45 second clip you want to train on.</li>
+            <li>In Export settings, select <strong>360 Video</strong> (Equirectangular).</li>
+            <li>Resolution: Max available (e.g., 5.7K or 8K).</li>
+            <li>Format: `.mp4` (H.264 or H.265). <strong>Avoid ProRes</strong> as file sizes will be far too large for browser processing.</li>
+            <li>Bitrate: Target 100-150 Mbps for high quality. Ensure the final exported file remains under 500MB.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- File info (shown after file selected) -->
+      <div id="file-info" class="file-info hidden" style="margin-top: 24px;">
+        <div class="file-info-row">
+          <span class="file-name" id="file-name"></span>
+          <span class="file-badge" id="file-badge"></span>
+        </div>
+        <div class="file-meta" id="file-meta"></div>
+        <button id="btn-change-file" class="btn-ghost">Change file</button>
+      </div>
+    </section>
+
+    <!-- Step 2: Configure -->
+    <section id="step-configure" class="step hidden">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <h2>Configure Output</h2>
+      </div>
+
+      <div class="config-grid">
+        <!-- Output Mode -->
+        <div class="config-card">
+          <label class="config-label">Output Mode</label>
+          <div class="mode-selector" id="mode-selector">
+            <button class="mode-btn active" data-mode="perspective-4" id="mode-perspective-4">
+              <div class="mode-icon">
+                <svg viewBox="0 0 40 40"><rect x="2" y="2" width="16" height="16" rx="2" fill="currentColor" opacity="0.8"/><rect x="22" y="2" width="16" height="16" rx="2" fill="currentColor" opacity="0.6"/><rect x="2" y="22" width="16" height="16" rx="2" fill="currentColor" opacity="0.6"/><rect x="22" y="22" width="16" height="16" rx="2" fill="currentColor" opacity="0.4"/></svg>
+              </div>
+              <span class="mode-title">4 Perspective Tiles</span>
+              <span class="mode-desc">Front, Right, Back, Left</span>
+              <span class="mode-rec">Recommended for Postshot</span>
+            </button>
+            <button class="mode-btn" data-mode="perspective-6" id="mode-perspective-6">
+              <div class="mode-icon">
+                <svg viewBox="0 0 40 40"><rect x="2" y="2" width="11" height="11" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="15" y="2" width="11" height="11" rx="1.5" fill="currentColor" opacity="0.7"/><rect x="28" y="2" width="11" height="11" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="2" y="15" width="11" height="11" rx="1.5" fill="currentColor" opacity="0.7"/><rect x="15" y="15" width="11" height="11" rx="1.5" fill="currentColor" opacity="0.5"/><rect x="28" y="15" width="11" height="11" rx="1.5" fill="currentColor" opacity="0.3"/></svg>
+              </div>
+              <span class="mode-title">6 Cubemap Tiles</span>
+              <span class="mode-desc">All 6 faces</span>
+              <span class="mode-rec">Maximum coverage</span>
+            </button>
+            <button class="mode-btn" data-mode="equirect" id="mode-equirect">
+              <div class="mode-icon">
+                <svg viewBox="0 0 40 40"><rect x="2" y="8" width="36" height="24" rx="3" fill="currentColor" opacity="0.7"/></svg>
+              </div>
+              <span class="mode-title">Equirectangular</span>
+              <span class="mode-desc">360° frames as-is</span>
+              <span class="mode-rec">For direct 360 support</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- FPS -->
+        <div class="config-card">
+          <label class="config-label">Frame Rate</label>
+          <div class="radio-group" id="fps-selector">
+            <button class="radio-btn" data-value="0.5">0.5 fps</button>
+            <button class="radio-btn active" data-value="2">2 fps</button>
+            <button class="radio-btn" data-value="4">4 fps</button>
+            <button class="radio-btn" data-value="8">8 fps</button>
+          </div>
+          <p class="config-hint" id="fps-hint">~216 frames estimated</p>
+        </div>
+
+        <!-- Resolution -->
+        <div class="config-card">
+          <label class="config-label">Tile Resolution</label>
+          <div class="radio-group" id="res-selector">
+            <button class="radio-btn" data-value="1280">1280px</button>
+            <button class="radio-btn active" data-value="1920">1920px</button>
+            <button class="radio-btn" data-value="2560">2560px</button>
+          </div>
+        </div>
+
+        <!-- Quality -->
+        <div class="config-card">
+          <label class="config-label">JPEG Quality</label>
+          <div class="slider-row">
+            <input type="range" id="quality-slider" min="1" max="10" value="2" class="slider" />
+            <span class="slider-value" id="quality-value">High (2)</span>
+          </div>
+        </div>
+        </div>
+
+      <button id="btn-process" class="btn-primary">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="btn-icon"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+        Start Processing
+      </button>
+    </section>
+
+    <!-- Step 3: Processing -->
+    <section id="step-processing" class="step hidden">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <h2>Processing</h2>
+      </div>
+      <div class="processing-card">
+        <div class="processing-stage" id="processing-stage">Loading FFmpeg...</div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <span class="progress-text" id="progress-text">0%</span>
+        </div>
+        <div class="processing-detail" id="processing-detail"></div>
+        <div class="processing-log" id="processing-log"></div>
+      </div>
+    </section>
+
+    <!-- Step 4: Download -->
+    <section id="step-download" class="step hidden">
+      <div class="step-header">
+        <span class="step-number">4</span>
+        <h2>Ready!</h2>
+      </div>
+      <div class="download-card">
+        <div class="download-icon">
+          <svg viewBox="0 0 48 48" fill="none">
+            <path d="M24 4V32M24 32L16 24M24 32L32 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 36V40C8 41.1046 8.89543 42 10 42H38C39.1046 42 40 41.1046 40 40V36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="download-stats" id="download-stats"></div>
+        <button id="btn-download" class="btn-primary btn-large">
+          <svg viewBox="0 0 20 20" fill="currentColor" class="btn-icon"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          Download ZIP
+        </button>
+        <button id="btn-restart" class="btn-ghost">Process another video</button>
+      </div>
+
+      <!-- Next steps guidance -->
+      <div class="next-steps">
+        <h3>What's next?</h3>
+        <div class="next-steps-grid">
+          <div class="next-step-card">
+            <span class="next-step-num">1</span>
+            <strong>Unzip frames</strong>
+            <p>Extract the ZIP to a folder</p>
+          </div>
+          <div class="next-step-card">
+            <span class="next-step-num">2</span>
+            <strong>Open Postshot / LichtFeld</strong>
+            <p>Create a new project</p>
+          </div>
+          <div class="next-step-card">
+            <span class="next-step-num">3</span>
+            <strong>Import frames folder</strong>
+            <p>Drag in the extracted folder</p>
+          </div>
+          <div class="next-step-card">
+            <span class="next-step-num">4</span>
+            <strong>Train your splat!</strong>
+            <p>Hit train and wait</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer removed per user request -->
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
