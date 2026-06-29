@@ -172,9 +172,9 @@ function handleFile(file) {
     return;
   }
 
-  // 500MB limit (524,288,000 bytes)
-  if (file.size > 524288000) {
-    alert(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB).\n\nThe Web version has a strict 500MB limit due to browser memory constraints. Please trim your video shorter or lower the bitrate in Insta360 Studio.`);
+  // 250MB limit (262,144,000 bytes)
+  if (file.size > 262144000) {
+    alert(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB).\n\nThe Web version has a strict 250MB limit due to browser memory constraints. Please trim your video shorter or lower the bitrate in Insta360 Studio.`);
     return;
   }
 
